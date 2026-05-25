@@ -22,10 +22,46 @@ class AuthRepository {
     return null;
   }
 
+  String generateLoginEmail(String name, String role) {
+    final sanitizedName = name
+        .toLowerCase()
+        .trim()
+        .replaceAll(RegExp(r'\s+'), '')
+        .replaceAll(RegExp(r'[^a-z0-9]'), '');
+    return '$sanitizedName@$role.pharmaflow.ci';
+  }
+
   Future<UserModel> signInWithEmail(String email, String password) async {
     try {
+      String loginEmail = email.trim();
+
+      if (!loginEmail.contains('@')) {
+        // Recherche de l'utilisateur par nom pour obtenir son email de connexion
+        final querySnapshot = await _firestore
+            .collection('users')
+            .where('name', isEqualTo: loginEmail)
+            .limit(1)
+            .get();
+        if (querySnapshot.docs.isNotEmpty) {
+          loginEmail = querySnapshot.docs.first.data()['email'] ?? loginEmail;
+        } else {
+          final sanitized = loginEmail.toLowerCase().replaceAll(RegExp(r'\s+'), '').replaceAll(RegExp(r'[^a-z0-9]'), '');
+          loginEmail = '$sanitized@patient.pharmaflow.ci';
+        }
+      } else if (!loginEmail.endsWith('.pharmaflow.ci')) {
+        // Recherche par email de récupération
+        final querySnapshot = await _firestore
+            .collection('users')
+            .where('recoveryEmail', isEqualTo: loginEmail)
+            .limit(1)
+            .get();
+        if (querySnapshot.docs.isNotEmpty) {
+          loginEmail = querySnapshot.docs.first.data()['email'] ?? loginEmail;
+        }
+      }
+
       final credential = await _auth.signInWithEmailAndPassword(
-        email: email,
+        email: loginEmail,
         password: password,
       );
 
@@ -46,15 +82,17 @@ class AuthRepository {
     required String role,
   }) async {
     try {
+      final loginEmail = generateLoginEmail(name, role);
       final credential = await _auth.createUserWithEmailAndPassword(
-        email: email,
+        email: loginEmail,
         password: password,
       );
 
       final userModel = UserModel(
         id: credential.user!.uid,
         name: name,
-        email: email,
+        email: loginEmail,
+        recoveryEmail: email.trim(),
         role: role,
         createdAt: DateTime.now(),
       );

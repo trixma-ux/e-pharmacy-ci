@@ -21,8 +21,10 @@ service cloud.firestore {
 
     // 1. Collection Utilisateurs (users)
     match /users/{userId} {
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow read, update, delete: if isOwner(userId) || isPharmacist();
+      // Lecture autorisée pour tous pour permettre de retrouver l'email généré lors du login
+      allow read: if true;
+      // Écriture réservée au propriétaire
+      allow write: if isAuthenticated() && request.auth.uid == userId;
     }
 
     // 2. Collection Catalogue de Médicaments (products)

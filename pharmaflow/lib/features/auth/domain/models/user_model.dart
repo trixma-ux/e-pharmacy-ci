@@ -2,6 +2,7 @@ class UserModel {
   final String id;
   final String name;
   final String email;
+  final String recoveryEmail;
   final String role; // 'patient' ou 'pharmacist'
   final DateTime createdAt;
 
@@ -9,6 +10,7 @@ class UserModel {
     required this.id,
     required this.name,
     required this.email,
+    required this.recoveryEmail,
     required this.role,
     required this.createdAt,
   });
@@ -17,6 +19,7 @@ class UserModel {
     String? id,
     String? name,
     String? email,
+    String? recoveryEmail,
     String? role,
     DateTime? createdAt,
   }) {
@@ -24,6 +27,7 @@ class UserModel {
       id: id ?? this.id,
       name: name ?? this.name,
       email: email ?? this.email,
+      recoveryEmail: recoveryEmail ?? this.recoveryEmail,
       role: role ?? this.role,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -34,6 +38,7 @@ class UserModel {
       'id': id,
       'name': name,
       'email': email,
+      'recoveryEmail': recoveryEmail,
       'role': role,
       'createdAt': createdAt.toIso8601String(),
     };
@@ -44,6 +49,7 @@ class UserModel {
       id: documentId,
       name: map['name'] ?? '',
       email: map['email'] ?? '',
+      recoveryEmail: map['recoveryEmail'] ?? '',
       role: map['role'] ?? 'patient',
       createdAt: map['createdAt'] != null 
           ? DateTime.parse(map['createdAt']) 
