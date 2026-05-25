@@ -25,7 +25,7 @@ class HomeScreen extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
+                      const Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -36,7 +36,7 @@ class HomeScreen extends StatelessWidget {
                               fontSize: 14,
                             ),
                           ),
-                          const Text(
+                          Text(
                             'Marc Patient',
                             style: TextStyle(
                               color: AppColors.textPrimaryLight,
@@ -52,7 +52,7 @@ class HomeScreen extends StatelessWidget {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -79,7 +79,7 @@ class HomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 15,
                         offset: const Offset(0, 5),
                       ),
@@ -92,7 +92,7 @@ class HomeScreen extends StatelessWidget {
                       suffixIcon: Container(
                         margin: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryLight.withOpacity(0.3),
+                          color: AppColors.primaryLight.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(Icons.tune_rounded, color: AppColors.primary),
@@ -122,7 +122,7 @@ class HomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.3),
+                        color: AppColors.primary.withValues(alpha: 0.3),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),
@@ -136,7 +136,7 @@ class HomeScreen extends StatelessWidget {
                         child: Icon(
                           Icons.local_pharmacy,
                           size: 150,
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withValues(alpha: 0.1),
                         ),
                       ),
                       Padding(

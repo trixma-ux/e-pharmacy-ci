@@ -83,7 +83,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primaryLight.withOpacity(0.5),
+                color: AppColors.primaryLight.withValues(alpha: 0.5),
               ),
             ).animate().fadeIn(duration: 1.seconds).scale(),
           ),
@@ -95,7 +95,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               height: 200,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.secondary.withOpacity(0.3),
+                color: AppColors.secondary.withValues(alpha: 0.3),
               ),
             ).animate().fadeIn(duration: 1.seconds).scale(),
           ),
@@ -115,8 +115,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.white.withOpacity(0.1),
-                      Colors.white.withOpacity(0.05),
+                      Colors.white.withValues(alpha: 0.1),
+                      Colors.white.withValues(alpha: 0.05),
                     ],
                     stops: const [0.1, 1],
                   ),
@@ -124,8 +124,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.white.withOpacity(0.5),
-                      Colors.white.withOpacity(0.1),
+                      Colors.white.withValues(alpha: 0.5),
+                      Colors.white.withValues(alpha: 0.1),
                     ],
                   ),
                   child: Padding(
