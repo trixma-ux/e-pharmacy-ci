@@ -1,3 +1,5 @@
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,19 +23,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     'https://api.dicebear.com/7.x/bottts/png?seed=Aneka',
   ];
 
-  void _showAvatarPicker(BuildContext context, String? currentPhoto) {
-    final TextEditingController urlController = TextEditingController(text: currentPhoto);
+  void _uploadPhotoFromDevice(BuildContext context) {
+    final uploadInput = html.FileUploadInputElement()
+      ..accept = 'image/*'
+      ..click();
 
+    uploadInput.onChange.listen((event) {
+      final file = uploadInput.files?.first;
+      if (file != null) {
+        final reader = html.FileReader();
+        reader.readAsDataUrl(file);
+        reader.onLoadEnd.listen((event) {
+          final dataUrl = reader.result as String?;
+          if (dataUrl != null) {
+            ref.read(authControllerProvider.notifier).updateProfilePhoto(dataUrl);
+            if (context.mounted) Navigator.pop(context);
+          }
+        });
+      }
+    });
+  }
+
+  void _showAvatarPicker(BuildContext context, String? currentPhoto) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
+      builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
             top: 24,
             left: 24,
             right: 24,
@@ -44,19 +65,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             children: [
               const Text(
                 'Choisir une photo de profil',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimaryLight,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight),
+              ),
+              const SizedBox(height: 20),
+              // Upload depuis l'appareil
+              GestureDetector(
+                onTap: () => _uploadPhotoFromDevice(ctx),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                        child: const Icon(Icons.upload_rounded, color: Colors.white, size: 22),
+                      ),
+                      const SizedBox(width: 16),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Importer depuis mon appareil',
+                              style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight)),
+                          Text('JPG, PNG depuis votre galerie/dossier',
+                              style: TextStyle(fontSize: 12, color: AppColors.textSecondaryLight)),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               const Text(
                 'Avatars prédéfinis',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondaryLight,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textSecondaryLight),
               ),
               const SizedBox(height: 12),
               SizedBox(
@@ -69,7 +116,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     return GestureDetector(
                       onTap: () {
                         ref.read(authControllerProvider.notifier).updateProfilePhoto(avatarUrl);
-                        Navigator.pop(context);
+                        Navigator.pop(ctx);
                       },
                       child: Container(
                         margin: const EdgeInsets.only(right: 12),
@@ -83,52 +130,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ),
                           color: AppColors.backgroundLight,
                         ),
-                        child: ClipOval(
-                          child: Image.network(avatarUrl),
-                        ),
+                        child: ClipOval(child: Image.network(avatarUrl)),
                       ),
                     );
                   },
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Ou entrez l\'URL d\'une image personnalisée',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondaryLight,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: urlController,
-                decoration: InputDecoration(
-                  hintText: 'https://exemple.com/image.png',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    final url = urlController.text.trim();
-                    if (url.isNotEmpty) {
-                      ref.read(authControllerProvider.notifier).updateProfilePhoto(url);
-                    }
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Enregistrer l\'URL', style: TextStyle(color: Colors.white)),
                 ),
               ),
               const SizedBox(height: 24),

@@ -1,24 +1,60 @@
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../domain/cart_provider.dart';
 
-class CheckoutScreen extends StatefulWidget {
+class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
 
   @override
-  State<CheckoutScreen> createState() => _CheckoutScreenState();
+  ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
 }
 
-class _CheckoutScreenState extends State<CheckoutScreen> {
-  int _selectedPaymentMethod = 0; // 0 = Wave, 1 = Orange Money, 2 = Cash
+class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
+  int _selectedPaymentMethod = 0;
   bool _isProcessing = false;
+  String? _ordonnanceUrl;
+  String? _ordonnanceFileName;
+
+  void _pickOrdonnanceImage() {
+    final uploadInput = html.FileUploadInputElement()
+      ..accept = 'image/*'
+      ..click();
+
+    uploadInput.onChange.listen((event) {
+      final file = uploadInput.files?.first;
+      if (file != null) {
+        final reader = html.FileReader();
+        reader.readAsDataUrl(file);
+        reader.onLoadEnd.listen((event) {
+          setState(() {
+            _ordonnanceUrl = reader.result as String?;
+            _ordonnanceFileName = file.name;
+          });
+        });
+      }
+    });
+  }
 
   void _processPayment() async {
+    final cartNotifier = ref.read(cartProvider.notifier);
+    if (cartNotifier.hasItemsRequiringPrescription && _ordonnanceUrl == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Veuillez uploader votre ordonnance pour les médicaments sur prescription.'),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
     setState(() => _isProcessing = true);
     await Future.delayed(const Duration(seconds: 2));
     if (mounted) {
       setState(() => _isProcessing = false);
+      ref.read(cartProvider.notifier).clear();
       _showSuccessDialog();
     }
   }
@@ -36,10 +72,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 .animate()
                 .scale(duration: 400.ms, curve: Curves.easeOutBack),
             const SizedBox(height: 16),
-            const Text(
-              'Paiement Réussi !',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
+            const Text('Paiement Réussi !', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             const Text(
               'Votre commande a été transmise à la pharmacie et est en attente de validation.',
@@ -51,8 +84,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).pop(); // ferme dialog
-                  context.go('/main'); // retour à l'accueil
+                  Navigator.of(context).pop();
+                  context.go('/main');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -70,6 +103,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cartNotifier = ref.watch(cartProvider.notifier);
+    final cartTotal = cartNotifier.grandTotal;
+    final requiresOrdonnance = cartNotifier.hasItemsRequiringPrescription;
+
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
@@ -100,7 +137,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             _buildPaymentOption(
               index: 1,
               title: 'Orange Money',
-              subtitle: 'Payer avec Orange',
+              subtitle: 'Payer avec Orange Money',
               icon: Icons.phone_android,
               color: const Color(0xFFFF7900),
             ).animate().fadeIn(delay: 200.ms).slideX(),
@@ -108,34 +145,106 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             _buildPaymentOption(
               index: 2,
               title: 'Paiement à la livraison',
-              subtitle: 'Espèces',
+              subtitle: 'Espèces à la réception',
               icon: Icons.money,
               color: Colors.green,
             ).animate().fadeIn(delay: 300.ms).slideX(),
-            
+
+            if (requiresOrdonnance) ...[
+              const SizedBox(height: 32),
+              const Text('Upload de l\'ordonnance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              const Text('Un ou plusieurs médicaments nécessitent une ordonnance.',
+                  style: TextStyle(color: AppColors.error, fontSize: 12)),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: _pickOrdonnanceImage,
+                child: Container(
+                  width: double.infinity,
+                  height: _ordonnanceUrl != null ? 220 : 120,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: _ordonnanceUrl != null ? AppColors.success : AppColors.primary.withValues(alpha: 0.5),
+                      style: BorderStyle.solid,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    color: _ordonnanceUrl != null
+                        ? AppColors.success.withValues(alpha: 0.05)
+                        : AppColors.primary.withValues(alpha: 0.05),
+                  ),
+                  child: _ordonnanceUrl != null
+                      ? Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(14),
+                              child: Image.network(
+                                _ordonnanceUrl!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.edit, size: 14, color: Colors.white),
+                                    const SizedBox(width: 4),
+                                    const Text('Changer', style: TextStyle(color: Colors.white, fontSize: 12)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 8,
+                              left: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: AppColors.success.withValues(alpha: 0.9),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle, size: 14, color: Colors.white),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _ordonnanceFileName ?? 'Ordonnance',
+                                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.cloud_upload_outlined, size: 40, color: AppColors.primary),
+                            const SizedBox(height: 8),
+                            const Text('Cliquez pour sélectionner votre ordonnance',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: AppColors.primaryDark, fontSize: 13)),
+                            const SizedBox(height: 4),
+                            const Text('Format : JPG, PNG',
+                                style: TextStyle(color: AppColors.textSecondaryLight, fontSize: 11)),
+                          ],
+                        ),
+                ),
+              ).animate().fadeIn(delay: 400.ms),
+            ],
+
             const SizedBox(height: 32),
-            const Text('Upload de l\'ordonnance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text('Un ou plusieurs articles nécessitent une ordonnance.', style: TextStyle(color: AppColors.error, fontSize: 12)),
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), style: BorderStyle.solid),
-                borderRadius: BorderRadius.circular(16),
-                color: AppColors.primary.withValues(alpha: 0.05),
-              ),
-              child: const Column(
-                children: [
-                  Icon(Icons.cloud_upload_outlined, size: 40, color: AppColors.primary),
-                  SizedBox(height: 8),
-                  Text('Appuyez pour prendre une photo\nou choisir depuis la galerie', textAlign: TextAlign.center, style: TextStyle(color: AppColors.primaryDark)),
-                ],
-              ),
-            ).animate().fadeIn(delay: 400.ms),
-            
-            const SizedBox(height: 40),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -147,7 +256,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
                 child: _isProcessing
                     ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Confirmer le paiement (6 500 FCFA)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    : Text(
+                        'Confirmer le paiement (${cartNotifier.formatPrice(cartTotal)})',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
               ),
             ).animate().fadeIn(delay: 500.ms),
           ],
@@ -166,9 +278,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: isSelected ? AppColors.primary : Colors.transparent, width: 2),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 3))],
         ),
         child: Row(
           children: [
@@ -182,7 +292,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                   Text(subtitle, style: const TextStyle(color: AppColors.textSecondaryLight, fontSize: 12)),
                 ],
               ),
