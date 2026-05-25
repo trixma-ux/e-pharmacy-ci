@@ -1,0 +1,61 @@
+name: pharmaflow
+description: Application E-Pharmacy Premium pour la Côte d'Ivoire.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  
+  # State Management & Architecture
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+  
+  # Navigation
+  go_router: ^12.1.1
+  
+  # Firebase
+  firebase_core: any
+  firebase_auth: any
+  cloud_firestore: any
+  firebase_storage: any
+  firebase_messaging: any
+  
+  # UI & Design
+  google_fonts: any
+  cached_network_image: any
+  lottie: any
+  flutter_animate: any
+  shimmer: any
+  fl_chart: any
+  glassmorphism: any
+  
+  # Utils
+  intl: any
+  uuid: any
+  fpdart: any
+  shared_preferences: any
+  
+  # Maps
+  flutter_map: any
+  latlong2: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  build_runner: ^2.4.7
+  riverpod_generator: ^2.3.9
+  custom_lint: ^0.5.7
+  riverpod_lint: ^2.3.7
+
+flutter:
+  uses-material-design: true
+  # assets:
+  #   - assets/images/
+  #   - assets/lottie/
