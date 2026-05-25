@@ -3,11 +3,147 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../widgets/medicine_card.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  // Liste de 16 médicaments ivoiriens courants
+  final List<Map<String, dynamic>> _medicines = [
+    {
+      'name': 'Doliprane 1000mg',
+      'form': 'Comprimés',
+      'price': '1 500 FCFA',
+      'requiresPrescription': false,
+    },
+    {
+      'name': 'Co-Artesiane',
+      'form': 'Suspension buvable',
+      'price': '3 200 FCFA',
+      'requiresPrescription': true,
+    },
+    {
+      'name': 'Amoxicilline 500mg',
+      'form': 'Gélules',
+      'price': '2 000 FCFA',
+      'requiresPrescription': true,
+    },
+    {
+      'name': 'Spasfon',
+      'form': 'Comprimés',
+      'price': '1 800 FCFA',
+      'requiresPrescription': false,
+    },
+    {
+      'name': 'Gaviscon',
+      'form': 'Suspension buvable',
+      'price': '2 500 FCFA',
+      'requiresPrescription': false,
+    },
+    {
+      'name': 'Ventoline 100µg',
+      'form': 'Inhalateur',
+      'price': '4 500 FCFA',
+      'requiresPrescription': true,
+    },
+    {
+      'name': 'Metformine 1000mg',
+      'form': 'Comprimés',
+      'price': '3 800 FCFA',
+      'requiresPrescription': true,
+    },
+    {
+      'name': 'Loratadine 10mg',
+      'form': 'Comprimés',
+      'price': '1 200 FCFA',
+      'requiresPrescription': false,
+    },
+    {
+      'name': 'Efferalgan 500mg',
+      'form': 'Comprimés effervescents',
+      'price': '1 400 FCFA',
+      'requiresPrescription': false,
+    },
+    {
+      'name': 'Augmentin 1g',
+      'form': 'Poudre pour suspension',
+      'price': '6 500 FCFA',
+      'requiresPrescription': true,
+    },
+    {
+      'name': 'Malarone',
+      'form': 'Comprimés',
+      'price': '8 900 FCFA',
+      'requiresPrescription': true,
+    },
+    {
+      'name': 'Voltarene 50mg',
+      'form': 'Comprimés',
+      'price': '2 800 FCFA',
+      'requiresPrescription': true,
+    },
+    {
+      'name': 'Imodium 2mg',
+      'form': 'Gélules',
+      'price': '1 500 FCFA',
+      'requiresPrescription': false,
+    },
+    {
+      'name': 'Smecta',
+      'form': 'Sachets',
+      'price': '2 200 FCFA',
+      'requiresPrescription': false,
+    },
+    {
+      'name': 'Vogalene 5mg',
+      'form': 'Comprimés',
+      'price': '1 900 FCFA',
+      'requiresPrescription': true,
+    },
+    {
+      'name': 'Nurofen 400mg',
+      'form': 'Comprimés',
+      'price': '2 100 FCFA',
+      'requiresPrescription': false,
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> get _filteredMedicines {
+    if (_searchQuery.isEmpty) return _medicines;
+    return _medicines.where((med) {
+      final name = med['name'].toString().toLowerCase();
+      final form = med['form'].toString().toLowerCase();
+      final query = _searchQuery.toLowerCase();
+      return name.contains(query) || form.contains(query);
+    }).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final filtered = _filteredMedicines;
+
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       body: SafeArea(
@@ -86,17 +222,25 @@ class HomeScreen extends StatelessWidget {
                     ],
                   ),
                   child: TextField(
+                    controller: _searchController,
                     decoration: InputDecoration(
                       hintText: 'Rechercher un médicament...',
                       prefixIcon: const Icon(Icons.search, color: AppColors.primary),
-                      suffixIcon: Container(
-                        margin: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.tune_rounded, color: AppColors.primary),
-                      ),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, color: AppColors.textSecondaryLight),
+                              onPressed: () {
+                                _searchController.clear();
+                              },
+                            )
+                          : Container(
+                              margin: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryLight.withValues(alpha: 0.3),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.tune_rounded, color: AppColors.primary),
+                            ),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
@@ -204,28 +348,42 @@ class HomeScreen extends StatelessWidget {
             ),
 
             // Products Grid
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.75,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
+            if (filtered.isEmpty)
+              const SliverToBoxAdapter(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Text(
+                      'Aucun médicament trouvé',
+                      style: TextStyle(color: AppColors.textSecondaryLight, fontSize: 16),
+                    ),
+                  ),
                 ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    return MedicineCard(
-                      name: index == 0 ? 'Doliprane 1000mg' : 'Vitamine C',
-                      form: 'Comprimés',
-                      price: index == 0 ? '2 500 FCFA' : '3 000 FCFA',
-                      requiresPrescription: index == 0 ? false : true,
-                    ).animate().fadeIn(delay: Duration(milliseconds: 400 + (index * 100))).slideY(begin: 0.2);
-                  },
-                  childCount: 4,
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.72,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final med = filtered[index];
+                      return MedicineCard(
+                        name: med['name'] as String,
+                        form: med['form'] as String,
+                        price: med['price'] as String,
+                        requiresPrescription: med['requiresPrescription'] as bool,
+                      ).animate().fadeIn(delay: Duration(milliseconds: 100 + (index * 50))).slideY(begin: 0.1);
+                    },
+                    childCount: filtered.length,
+                  ),
                 ),
               ),
-            ),
             
             const SliverToBoxAdapter(child: SizedBox(height: 32)),
           ],

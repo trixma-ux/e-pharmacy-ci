@@ -1,47 +1,41 @@
 @echo off
 echo ========================================================
-echo   PHARMAFLOW - CORRECTION DES BUGS + DEPLOIEMENT FINAL
+echo   PHARMAFLOW - BUILD WEB ET DEPLOIEMENT GITHUB PAGES
 echo ========================================================
 echo.
 
 cd pharmaflow
 
-echo [1/5] Telechargement des packages...
+echo [1/4] Clean et Recuperation des packages...
+call flutter clean
 call flutter pub get
+
+echo [2/4] Compilation en mode Web Release (base-href /e-pharmacy-ci/)...
+call flutter build web --release --base-href "/e-pharmacy-ci/"
+
 if %ERRORLEVEL% neq 0 (
-    echo ERREUR: flutter pub get a echoue.
+    echo ERREUR: flutter build web a echoue.
     pause & exit /b 1
 )
 
-echo [2/5] Analyse du code...
-call flutter analyze --no-fatal-infos --no-fatal-warnings
-echo Analyse terminee.
+echo [3/4] Preparation du dossier de deploiement...
+cd build\web
 
-echo [3/5] Retour au dossier racine...
-cd ..
-
-echo [4/5] Deploiement sur GitHub (commit + push)...
+echo [4/4] Deploiement sur la branche gh-pages...
+git init
+git remote add origin https://github.com/trixma-ux/e-pharmacy-ci.git
+git checkout -b gh-pages
 git add -A
-git commit -m "feat: correction de tous les bugs, Phase 4 complete (Carte OSM + Chat + Firebase)"
-git push
+git commit -m "deploy: release build to github pages"
+git push -f origin gh-pages
 
 if %ERRORLEVEL% neq 0 (
-    echo ERREUR: git push a echoue.
+    echo ERREUR: Le deploiement sur gh-pages a echoue.
     pause & exit /b 1
 )
 
-echo.
 echo ========================================================
-echo  SUCCES ! CODE POUSSE SUR GITHUB.
-echo ========================================================
-echo.
-echo  Lien GitHub : verifiez avec -> git remote get-url origin
-echo.
-echo  RAPPEL : Pour activer Firebase Authentication :
-echo  1. Allez sur console.firebase.google.com
-echo  2. Projet pharmacyflow-bd0ef
-echo  3. Authentication > Activer Email/Password
-echo  4. Firestore Database > Creer une base de donnees
-echo  5. Copiez les regles Firestore depuis la doc ci-dessous
+echo  DEPLOIEMENT REUSSI ! Le site est en cours de publication sur :
+echo  https://trixma-ux.github.io/e-pharmacy-ci/
 echo ========================================================
 pause
