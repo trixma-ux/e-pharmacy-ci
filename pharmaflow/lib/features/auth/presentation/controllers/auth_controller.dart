@@ -11,7 +11,7 @@ class AuthController extends AsyncNotifier<UserModel?> {
 
   Future<void> signIn(String email, String password) async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    state = await AsyncValue.guard<UserModel?>(() async {
       final repo = ref.read(authRepositoryProvider);
       return await repo.signInWithEmail(email, password);
     });
@@ -24,7 +24,7 @@ class AuthController extends AsyncNotifier<UserModel?> {
     required String role,
   }) async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    state = await AsyncValue.guard<UserModel?>(() async {
       final repo = ref.read(authRepositoryProvider);
       return await repo.signUpWithEmail(
         email: email,
