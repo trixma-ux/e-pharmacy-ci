@@ -17,6 +17,7 @@ class AuthScreen extends ConsumerStatefulWidget {
 
 class _AuthScreenState extends ConsumerState<AuthScreen> {
   bool isLogin = true;
+  String selectedRole = 'patient';
   
   // Controllers
   final _emailController = TextEditingController();
@@ -46,7 +47,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         email: email, 
         password: password, 
         name: name, 
-        role: 'patient',
+        role: selectedRole,
       );
     }
   }
@@ -106,7 +107,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: GlassmorphicContainer(
                   width: double.infinity,
-                  height: isLogin ? 480 : 560,
+                  height: isLogin ? 480 : 660,
                   borderRadius: 24,
                   blur: 20,
                   alignment: Alignment.bottomCenter,
@@ -164,6 +165,39 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             prefixIcon: Icons.person_outline_rounded,
                             controller: _nameController,
                           ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.2),
+                          const SizedBox(height: 16),
+                          
+                          // Sélection du rôle
+                          const Text(
+                            'Je suis un :',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondaryLight,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildRoleCard(
+                                  title: 'Patient / Client',
+                                  icon: Icons.person_outline_rounded,
+                                  isSelected: selectedRole == 'patient',
+                                  onTap: () => setState(() => selectedRole = 'patient'),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _buildRoleCard(
+                                  title: 'Pharmacien',
+                                  icon: Icons.local_pharmacy_outlined,
+                                  isSelected: selectedRole == 'pharmacist',
+                                  onTap: () => setState(() => selectedRole = 'pharmacist'),
+                                ),
+                              ),
+                            ],
+                          ).animate().fadeIn(delay: 250.ms),
                           const SizedBox(height: 16),
                         ],
                         
@@ -244,6 +278,48 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRoleCard({
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.borderLight.withValues(alpha: 0.2),
+            width: 1.5,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppColors.primary : AppColors.textSecondaryLight,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isSelected ? AppColors.primary : AppColors.textPrimaryLight,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
