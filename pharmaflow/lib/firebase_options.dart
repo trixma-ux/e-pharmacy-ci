@@ -8,7 +8,7 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, Tar
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError('DefaultFirebaseOptions have not been configured for web.');
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
