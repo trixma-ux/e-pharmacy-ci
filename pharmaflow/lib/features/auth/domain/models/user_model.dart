@@ -5,6 +5,7 @@ class UserModel {
   final String recoveryEmail;
   final String role; // 'patient' ou 'pharmacist'
   final DateTime createdAt;
+  final String? photoUrl;
 
   const UserModel({
     required this.id,
@@ -13,6 +14,7 @@ class UserModel {
     required this.recoveryEmail,
     required this.role,
     required this.createdAt,
+    this.photoUrl,
   });
 
   UserModel copyWith({
@@ -22,6 +24,7 @@ class UserModel {
     String? recoveryEmail,
     String? role,
     DateTime? createdAt,
+    String? photoUrl,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -30,6 +33,7 @@ class UserModel {
       recoveryEmail: recoveryEmail ?? this.recoveryEmail,
       role: role ?? this.role,
       createdAt: createdAt ?? this.createdAt,
+      photoUrl: photoUrl ?? this.photoUrl,
     );
   }
 
@@ -41,6 +45,7 @@ class UserModel {
       'recoveryEmail': recoveryEmail,
       'role': role,
       'createdAt': createdAt.toIso8601String(),
+      'photoUrl': photoUrl,
     };
   }
 
@@ -54,6 +59,7 @@ class UserModel {
       createdAt: map['createdAt'] != null 
           ? DateTime.parse(map['createdAt']) 
           : DateTime.now(),
+      photoUrl: map['photoUrl'],
     );
   }
 }

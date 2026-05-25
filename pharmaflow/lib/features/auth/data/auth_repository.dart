@@ -108,6 +108,12 @@ class AuthRepository {
   Future<void> signOut() async {
     await _auth.signOut();
   }
+
+  Future<void> updateProfilePhoto(String uid, String photoUrl) async {
+    await _firestore.collection('users').doc(uid).update({
+      'photoUrl': photoUrl,
+    });
+  }
 }
 
 // Provider simple sans annotation @riverpod

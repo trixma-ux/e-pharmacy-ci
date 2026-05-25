@@ -41,6 +41,14 @@ class AuthController extends AsyncNotifier<UserModel?> {
     await repo.signOut();
     state = const AsyncValue.data(null);
   }
+
+  Future<void> updateProfilePhoto(String photoUrl) async {
+    final currentUser = state.value;
+    if (currentUser == null) return;
+    final repo = ref.read(authRepositoryProvider);
+    await repo.updateProfilePhoto(currentUser.id, photoUrl);
+    state = AsyncValue.data(currentUser.copyWith(photoUrl: photoUrl));
+  }
 }
 
 // Provider manuel sans annotation @riverpod

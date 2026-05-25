@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../widgets/medicine_card.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -143,6 +145,19 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final filtered = _filteredMedicines;
+    final authState = ref.watch(authControllerProvider);
+    
+    final userName = authState.when(
+      data: (user) => user?.name ?? 'Patient',
+      loading: () => '...',
+      error: (_, __) => 'Patient',
+    );
+
+    final userPhoto = authState.when(
+      data: (user) => user?.photoUrl,
+      loading: () => null,
+      error: (_, __) => null,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -161,11 +176,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
+                          const Text(
                             'Bonjour, 👋',
                             style: TextStyle(
                               color: AppColors.textSecondaryLight,
@@ -173,8 +188,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           Text(
-                            'Marc Patient',
-                            style: TextStyle(
+                            userName,
+                            style: const TextStyle(
                               color: AppColors.textPrimaryLight,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -182,22 +197,65 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ],
                       ),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceLight,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                      Row(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceLight,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.notifications_none_rounded, color: AppColors.primary),
-                          onPressed: () {},
-                        ),
+                            child: IconButton(
+                              icon: const Icon(Icons.notifications_none_rounded, color: AppColors.primary),
+                              onPressed: () {},
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                              border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), width: 2),
+                            ),
+                            child: ClipOval(
+                              child: userPhoto != null && userPhoto.isNotEmpty
+                                  ? Image.network(
+                                      userPhoto,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) =>
+                                          const Icon(Icons.person, color: AppColors.primary),
+                                    )
+                                  : Container(
+                                      color: AppColors.primaryLight.withValues(alpha: 0.3),
+                                      child: Center(
+                                        child: Text(
+                                          userName.isNotEmpty ? userName[0].toUpperCase() : 'P',
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primaryDark,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
                       )
                     ],
                   ),
@@ -385,7 +443,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             
-            const SliverToBoxAdapter(child: SizedBox(height: 32)),
+            const SliverToBoxAdapter(child: SizedBox(height: 120)), // Espace supplémentaire pour la barre de navigation flottante
           ],
         ),
       ),

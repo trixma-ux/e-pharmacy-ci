@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import 'home_screen.dart';
 import 'cart_screen.dart';
 import 'pharmacy_map_screen.dart';
+import 'profile_screen.dart';
 
 class MainLayoutScreen extends StatefulWidget {
   const MainLayoutScreen({super.key});
@@ -20,6 +21,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     const HomeScreen(),
     const CartScreen(),
     const PharmacyMapScreen(),
+    const ProfileScreen(),
   ];
 
   @override
@@ -68,6 +70,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                   _buildNavItem(icon: Icons.home_rounded, label: 'Accueil', index: 0),
                   _buildNavItem(icon: Icons.shopping_bag_rounded, label: 'Panier', index: 1),
                   _buildNavItem(icon: Icons.map_rounded, label: 'Carte', index: 2),
+                  _buildNavItem(icon: Icons.person_rounded, label: 'Profil', index: 3),
                 ],
               ),
             ).animate().slideY(begin: 1, duration: 500.ms, curve: Curves.easeOutBack),
