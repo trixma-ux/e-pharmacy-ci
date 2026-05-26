@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../domain/cart_provider.dart';
@@ -134,7 +135,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                                 child: IconButton(
                                   icon: const Icon(Icons.notifications_none_rounded, color: AppColors.primary),
-                                  onPressed: () {},
+                                  onPressed: () => context.push('/my_orders'),
                                 ),
                               ),
                               if (cartItems.isNotEmpty)
@@ -274,8 +275,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimaryLight),
                     ),
                     TextButton(
-                      onPressed: () {},
-                      child: const Text('Tout voir', style: TextStyle(color: AppColors.primary)),
+                      onPressed: () => context.push('/my_orders'),
+                      child: const Text('Mes commandes', style: TextStyle(color: AppColors.primary)),
                     ),
                   ],
                 ).animate().fadeIn(delay: 300.ms),

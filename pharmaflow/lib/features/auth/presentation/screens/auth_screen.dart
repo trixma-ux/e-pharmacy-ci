@@ -32,6 +32,62 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     super.dispose();
   }
 
+  void _showForgotPasswordDialog(BuildContext context) {
+    final emailController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Mot de passe oublié'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Saisissez votre email de récupération (celui utilisé à l\'inscription).',
+              style: TextStyle(color: AppColors.textSecondaryLight, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            CustomTextField(
+              hintText: 'Email de récupération',
+              prefixIcon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
+              controller: emailController,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
+          ElevatedButton(
+            onPressed: () async {
+              final email = emailController.text.trim();
+              if (email.isEmpty) return;
+              try {
+                await ref.read(authControllerProvider.notifier).resetPassword(email);
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Email de réinitialisation envoyé.'),
+                      backgroundColor: AppColors.success,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('$e'), backgroundColor: AppColors.error),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Envoyer', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _submit() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -220,7 +276,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
-                              onPressed: () {},
+                              onPressed: () => _showForgotPasswordDialog(context),
                               child: const Text('Mot de passe oublié ?', style: TextStyle(color: AppColors.primary)),
                             ),
                           ).animate().fadeIn(delay: 500.ms),
@@ -232,21 +288,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             text: isLogin ? 'Se connecter' : 'S\'inscrire',
                             onPressed: _submit,
                           ).animate().fadeIn(delay: 600.ms).scale(),
-                        
-                        if (isLogin) ...[
-                          const SizedBox(height: 12),
-                          OutlinedButton(
-                            onPressed: () {
-                              context.go('/pharmacist_dashboard');
-                            },
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              side: const BorderSide(color: AppColors.primary),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            ),
-                            child: const Text('Accès Espace Pharmacien (Test)', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                          ).animate().fadeIn(delay: 650.ms).scale(),
-                        ],
                         
                         const SizedBox(height: 16),
                         

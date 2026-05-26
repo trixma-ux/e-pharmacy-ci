@@ -285,6 +285,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         title: 'Rôle',
                         value: user.role == 'pharmacist' ? 'Pharmacien' : 'Patient / Client',
                       ),
+                      if (user.role != 'pharmacist') ...[
+                        const SizedBox(height: 16),
+                        _buildActionTile(
+                          icon: Icons.receipt_long_rounded,
+                          title: 'Mes commandes',
+                          subtitle: 'Suivre l\'état de vos commandes',
+                          onTap: () => context.push('/my_orders'),
+                        ),
+                      ],
                       const SizedBox(height: 32),
 
                       // Bouton Déconnexion
@@ -318,6 +327,54 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Erreur: $err')),
+      ),
+    );
+  }
+
+  Widget _buildActionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: AppColors.primary, size: 22),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryLight)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondaryLight),
+          ],
+        ),
       ),
     );
   }

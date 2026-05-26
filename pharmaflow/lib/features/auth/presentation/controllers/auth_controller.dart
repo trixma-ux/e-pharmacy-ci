@@ -35,6 +35,18 @@ class AuthController extends AsyncNotifier<UserModel?> {
     });
   }
 
+  Future<void> resetPassword(String email) async {
+    final previous = state.value;
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      await repo.resetPassword(email);
+      state = AsyncValue.data(previous);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
   Future<void> signOut() async {
     state = const AsyncValue.loading();
     final repo = ref.read(authRepositoryProvider);

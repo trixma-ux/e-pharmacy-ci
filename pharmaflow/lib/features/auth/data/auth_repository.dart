@@ -105,6 +105,25 @@ class AuthRepository {
     }
   }
 
+  Future<void> resetPassword(String email) async {
+    var loginEmail = email.trim();
+    if (!loginEmail.contains('@')) {
+      throw Exception('Veuillez saisir votre email de récupération.');
+    }
+    if (!loginEmail.endsWith('.pharmaflow.ci')) {
+      final querySnapshot = await _firestore
+          .collection('users')
+          .where('recoveryEmail', isEqualTo: loginEmail)
+          .limit(1)
+          .get();
+      if (querySnapshot.docs.isEmpty) {
+        throw Exception('Aucun compte associé à cet email.');
+      }
+      loginEmail = querySnapshot.docs.first.data()['email'] as String;
+    }
+    await _auth.sendPasswordResetEmail(email: loginEmail);
+  }
+
   Future<void> signOut() async {
     await _auth.signOut();
   }
