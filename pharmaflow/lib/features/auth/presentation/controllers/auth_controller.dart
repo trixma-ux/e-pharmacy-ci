@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/user_model.dart';
 import '../../data/auth_repository.dart';
+import '../../../../core/bootstrap/app_bootstrap.dart';
 
 class AuthController extends AsyncNotifier<UserModel?> {
   @override
   Future<UserModel?> build() async {
+    await AppBootstrap.ready;
     final repo = ref.read(authRepositoryProvider);
     return await repo.getCurrentUserData();
   }

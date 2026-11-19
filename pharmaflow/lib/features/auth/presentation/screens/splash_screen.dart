@@ -20,7 +20,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _navigateToNext() async {
-    await Future.delayed(const Duration(milliseconds: 2200));
+    // Durée minimale courte du splash, en parallèle du chargement de la
+    // session (Firebase s'initialise en arrière-plan).
+    await Future.wait<void>([
+      Future<void>.delayed(const Duration(milliseconds: 600)),
+      ref.read(authControllerProvider.future).then((_) {}, onError: (_) {}),
+    ]);
     if (!mounted) return;
 
     final authAsync = ref.read(authControllerProvider);
