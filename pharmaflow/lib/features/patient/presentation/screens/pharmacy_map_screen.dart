@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class PharmacyMapScreen extends StatefulWidget {
@@ -219,6 +220,19 @@ class _PharmacyMapScreenState extends State<PharmacyMapScreen> {
     }).toList();
   }
 
+  Future<void> _openDirections(Map<String, dynamic> pharmacy) async {
+    final uri = Uri.https('www.google.com', '/maps/dir/', {
+      'api': '1',
+      'destination': '${pharmacy['lat']},${pharmacy['lng']}',
+    });
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Impossible d'ouvrir l'itinéraire")),
+      );
+    }
+  }
+
   void _showPharmacyDetails(Map<String, dynamic> pharmacy) {
     final isOpen = _isPharmacyOpen(pharmacy);
     final statusText = _getStatusText(pharmacy);
@@ -308,7 +322,7 @@ class _PharmacyMapScreenState extends State<PharmacyMapScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () {},
+                      onPressed: () => _openDirections(pharmacy),
                       icon: const Icon(Icons.directions, color: AppColors.primary),
                       label: const Text('Itinéraire', style: TextStyle(color: AppColors.primary)),
                       style: OutlinedButton.styleFrom(

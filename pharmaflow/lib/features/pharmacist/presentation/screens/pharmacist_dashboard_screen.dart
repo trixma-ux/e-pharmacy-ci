@@ -17,7 +17,6 @@ class PharmacistDashboardScreen extends ConsumerStatefulWidget {
 class _PharmacistDashboardScreenState extends ConsumerState<PharmacistDashboardScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _filterStatus = 'all';
 
   @override
   void initState() {
@@ -189,7 +188,8 @@ class _PharmacistDashboardScreenState extends ConsumerState<PharmacistDashboardS
                                   ),
                                   child: IconButton(
                                     icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
-                                    onPressed: () {},
+                                    tooltip: 'Commandes en attente',
+                                    onPressed: () => _tabController.animateTo(2),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
