@@ -3,7 +3,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:glassmorphism/glassmorphism.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/errors/auth_error_messages.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/validation/form_validators.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
 import '../../../../shared/widgets/primary_button.dart';
 import '../controllers/auth_controller.dart';
@@ -23,6 +25,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
@@ -34,12 +37,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   void _showForgotPasswordDialog(BuildContext context) {
     final emailController = TextEditingController();
+    final dialogFormKey = GlobalKey<FormState>();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Mot de passe oublié'),
-        content: Column(
+        content: Form(
+          key: dialogFormKey,
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
@@ -52,15 +58,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               prefixIcon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
               controller: emailController,
+              validator: FormValidators.email,
             ),
           ],
+        ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
           ElevatedButton(
             onPressed: () async {
+              if (!(dialogFormKey.currentState?.validate() ?? false)) return;
               final email = emailController.text.trim();
-              if (email.isEmpty) return;
               try {
                 await ref.read(authControllerProvider.notifier).resetPassword(email);
                 if (ctx.mounted) {
@@ -75,7 +83,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               } catch (e) {
                 if (ctx.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('$e'), backgroundColor: AppColors.error),
+                    SnackBar(content: Text(authErrorMessage(e)), backgroundColor: AppColors.error),
                   );
                 }
               }
@@ -89,16 +97,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   void _submit() async {
+    FocusScope.of(context).unfocus();
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
-    
-    if (email.isEmpty || password.isEmpty) return;
 
     if (isLogin) {
       await ref.read(authControllerProvider.notifier).signIn(email, password);
     } else {
       final name = _nameController.text.trim();
-      if (name.isEmpty) return;
       await ref.read(authControllerProvider.notifier).signUp(
         email: email, 
         password: password, 
@@ -116,7 +124,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     ref.listen(authControllerProvider, (previous, next) {
       if (next is AsyncError) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.error.toString(), style: const TextStyle(color: Colors.white)), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text(authErrorMessage(next.error ?? Exception()), style: const TextStyle(color: Colors.white)),
+            backgroundColor: AppColors.error,
+          ),
         );
       } else if (next is AsyncData && next.value != null) {
         // Redirection en fonction du rôle
@@ -129,7 +140,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     });
 
     return Scaffold(
-      body: Stack(
+      body: Form(
+        key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        child: Stack(
         children: [
           // Background design
           Positioned(
@@ -220,6 +234,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             hintText: 'Nom complet',
                             prefixIcon: Icons.person_outline_rounded,
                             controller: _nameController,
+                            validator: FormValidators.fullName,
                           ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.2),
                           const SizedBox(height: 16),
                           
@@ -262,6 +277,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           prefixIcon: Icons.email_outlined,
                           keyboardType: TextInputType.emailAddress,
                           controller: _emailController,
+                          validator: FormValidators.email,
                         ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.2),
                         const SizedBox(height: 16),
                         
@@ -270,6 +286,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           prefixIcon: Icons.lock_outline_rounded,
                           isPassword: true,
                           controller: _passwordController,
+                          validator: (v) => FormValidators.password(v, isSignUp: !isLogin),
                         ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.2),
                         
                         if (isLogin) ...[
@@ -319,6 +336,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
