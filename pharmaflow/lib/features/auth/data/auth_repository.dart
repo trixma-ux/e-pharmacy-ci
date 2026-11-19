@@ -31,45 +31,95 @@ class AuthRepository {
     return '$sanitizedName@$role.pharmaflow.ci';
   }
 
+  // Collection publique minimale pour retrouver l'email de connexion AVANT login,
+  // sans rendre la collection `users` lisible publiquement.
+  // Doc IDs : `name_<nom normalisé>` et `recovery_<email de récupération>`.
+  // Contenu : { uid, loginEmail } uniquement. Lecture par ID seulement (pas de listing).
+  static const String _lookupCollection = 'login_lookup';
+
+  String _sanitizeName(String name) => name
+      .toLowerCase()
+      .trim()
+      .replaceAll(RegExp(r'\s+'), '')
+      .replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+  String _nameKey(String name) => 'name_${_sanitizeName(name)}';
+  String _recoveryKey(String email) => 'recovery_${email.trim().toLowerCase()}';
+
+  Future<String?> _lookupLoginEmail(String key) async {
+    try {
+      final doc = await _firestore.collection(_lookupCollection).doc(key).get();
+      return doc.data()?['loginEmail'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Crée/actualise les entrées de recherche de l'utilisateur connecté (best effort).
+  Future<void> _upsertLoginLookup(UserModel user) async {
+    final entries = <String>[
+      if (_sanitizeName(user.name).isNotEmpty) _nameKey(user.name),
+      if (user.recoveryEmail.trim().isNotEmpty) _recoveryKey(user.recoveryEmail),
+    ];
+    for (final key in entries) {
+      try {
+        await _firestore.collection(_lookupCollection).doc(key).set({
+          'uid': user.id,
+          'loginEmail': user.email,
+        });
+      } catch (_) {
+        // Clé déjà prise par un autre compte (homonyme) : on ignore.
+      }
+    }
+  }
+
   Future<UserModel> signInWithEmail(String email, String password) async {
     try {
-      String loginEmail = email.trim();
+      final input = email.trim();
+      final candidates = <String>[];
 
-      if (!loginEmail.contains('@')) {
-        // Recherche de l'utilisateur par nom pour obtenir son email de connexion
-        final querySnapshot = await _firestore
-            .collection('users')
-            .where('name', isEqualTo: loginEmail)
-            .limit(1)
-            .get();
-        if (querySnapshot.docs.isNotEmpty) {
-          loginEmail = querySnapshot.docs.first.data()['email'] ?? loginEmail;
-        } else {
-          final sanitized = loginEmail.toLowerCase().replaceAll(RegExp(r'\s+'), '').replaceAll(RegExp(r'[^a-z0-9]'), '');
-          loginEmail = '$sanitized@patient.pharmaflow.ci';
+      if (!input.contains('@')) {
+        // Connexion par nom : email de connexion via login_lookup, sinon domaines générés
+        final found = await _lookupLoginEmail(_nameKey(input));
+        if (found != null) candidates.add(found);
+        final sanitized = _sanitizeName(input);
+        for (final role in ['patient', 'pharmacist']) {
+          final generated = '$sanitized@$role.pharmaflow.ci';
+          if (!candidates.contains(generated)) candidates.add(generated);
         }
-      } else if (!loginEmail.endsWith('.pharmaflow.ci')) {
-        // Recherche par email de récupération
-        final querySnapshot = await _firestore
-            .collection('users')
-            .where('recoveryEmail', isEqualTo: loginEmail)
-            .limit(1)
-            .get();
-        if (querySnapshot.docs.isNotEmpty) {
-          loginEmail = querySnapshot.docs.first.data()['email'] ?? loginEmail;
-        }
+      } else if (!input.endsWith('.pharmaflow.ci')) {
+        // Connexion par email de récupération
+        final found = await _lookupLoginEmail(_recoveryKey(input));
+        candidates.add(found ?? input);
+      } else {
+        candidates.add(input);
       }
 
-      final credential = await _auth.signInWithEmailAndPassword(
-        email: loginEmail,
-        password: password,
-      );
+      UserCredential? credential;
+      FirebaseAuthException? lastError;
+      for (final candidate in candidates) {
+        try {
+          credential = await _auth.signInWithEmailAndPassword(
+            email: candidate,
+            password: password,
+          );
+          break;
+        } on FirebaseAuthException catch (e) {
+          lastError = e;
+        }
+      }
+      if (credential == null) {
+        throw lastError ?? Exception('Identifiants invalides.');
+      }
 
       final doc = await _firestore.collection('users').doc(credential.user!.uid).get();
       if (!doc.exists) {
         throw Exception('Donnees utilisateur introuvables.');
       }
-      return UserModel.fromMap(doc.data()!, doc.id);
+      final user = UserModel.fromMap(doc.data()!, doc.id);
+      // Migration douce des comptes existants vers login_lookup
+      await _upsertLoginLookup(user);
+      return user;
     } catch (e) {
       throw Exception('Erreur de connexion: $e');
     }
@@ -98,6 +148,7 @@ class AuthRepository {
       );
 
       await _firestore.collection('users').doc(userModel.id).set(userModel.toMap());
+      await _upsertLoginLookup(userModel);
 
       return userModel;
     } catch (e) {
@@ -111,15 +162,11 @@ class AuthRepository {
       throw Exception('Veuillez saisir votre email de récupération.');
     }
     if (!loginEmail.endsWith('.pharmaflow.ci')) {
-      final querySnapshot = await _firestore
-          .collection('users')
-          .where('recoveryEmail', isEqualTo: loginEmail)
-          .limit(1)
-          .get();
-      if (querySnapshot.docs.isEmpty) {
+      final found = await _lookupLoginEmail(_recoveryKey(loginEmail));
+      if (found == null) {
         throw Exception('Aucun compte associé à cet email.');
       }
-      loginEmail = querySnapshot.docs.first.data()['email'] as String;
+      loginEmail = found;
     }
     await _auth.sendPasswordResetEmail(email: loginEmail);
   }
