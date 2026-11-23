@@ -1,6 +1,6 @@
-// Fichier généré automatiquement par 'flutterfire configure'
-// CECI EST UN FICHIER TEMPORAIRE POUR PERMETTRE LA COMPILATION.
-// VEUILLEZ EXECUTER `flutterfire configure` DANS VOTRE TERMINAL POUR LE REMPLACER.
+// Configuration Firebase du projet epharmacy-ci-steve-1d90d (compte gomonsteve01@gmail.com).
+// Web : app « E-Pharmacy CI Web » enregistrée. Android/iOS : apps non encore enregistrées
+// dans ce projet, lancer `flutterfire configure --project=epharmacy-ci-steve-1d90d` pour un build mobile.
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
@@ -27,29 +27,28 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBzDA8hvWeXSm8d68MSWGwtlhWIlDSycQo',
-    appId: '1:256831019681:web:7022006904a72cad4deee0',
-    messagingSenderId: '256831019681',
-    projectId: 'pharmacyflow-bd0ef',
-    authDomain: 'pharmacyflow-bd0ef.firebaseapp.com',
-    storageBucket: 'pharmacyflow-bd0ef.firebasestorage.app',
-    measurementId: 'G-Q8PZ8R5T4X',
+    apiKey: 'AIzaSyChRkpMPovAx0fGLtmHwwD14oZihUTOBpU',
+    appId: '1:207478254280:web:0bba3a4e089a74fd3293fd',
+    messagingSenderId: '207478254280',
+    projectId: 'epharmacy-ci-steve-1d90d',
+    authDomain: 'epharmacy-ci-steve-1d90d.firebaseapp.com',
+    storageBucket: 'epharmacy-ci-steve-1d90d.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBzDA8hvWeXSm8d68MSWGwtlhWIlDSycQo',
-    appId: '1:256831019681:android:7022006904a72cad4deee0', // Note: Android utilise généralement un appId spécifique mais celui-ci permettra une connexion basique
-    messagingSenderId: '256831019681',
-    projectId: 'pharmacyflow-bd0ef',
-    storageBucket: 'pharmacyflow-bd0ef.firebasestorage.app',
+    apiKey: 'AIzaSyChRkpMPovAx0fGLtmHwwD14oZihUTOBpU',
+    appId: '1:207478254280:android:7022006904a72cad4deee0', // Note: Android utilise généralement un appId spécifique mais celui-ci permettra une connexion basique
+    messagingSenderId: '207478254280',
+    projectId: 'epharmacy-ci-steve-1d90d',
+    storageBucket: 'epharmacy-ci-steve-1d90d.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBzDA8hvWeXSm8d68MSWGwtlhWIlDSycQo',
-    appId: '1:256831019681:ios:7022006904a72cad4deee0',
-    messagingSenderId: '256831019681',
-    projectId: 'pharmacyflow-bd0ef',
-    storageBucket: 'pharmacyflow-bd0ef.firebasestorage.app',
+    apiKey: 'AIzaSyChRkpMPovAx0fGLtmHwwD14oZihUTOBpU',
+    appId: '1:207478254280:ios:7022006904a72cad4deee0',
+    messagingSenderId: '207478254280',
+    projectId: 'epharmacy-ci-steve-1d90d',
+    storageBucket: 'epharmacy-ci-steve-1d90d.firebasestorage.app',
     iosBundleId: 'com.trixmaux.pharmaflow',
   );
 }
