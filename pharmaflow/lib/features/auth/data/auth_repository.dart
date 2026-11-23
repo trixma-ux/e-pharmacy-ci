@@ -145,8 +145,13 @@ class AuthRepository {
         recoveryEmail: email.trim(),
         role: role,
         createdAt: DateTime.now(),
+        // Un pharmacien inscrit démarre « en attente » : il doit être validé
+        // par un pharmacien validé ou un admin (règles Firestore).
+        status: role == 'pharmacist' ? PharmacistStatus.pending : null,
       );
 
+      // toMap() écrit status 'pending' pour un pharmacien, rien pour un
+      // patient, et jamais validatedBy / validatedAt (refusés par les règles).
       await _firestore.collection('users').doc(userModel.id).set(userModel.toMap());
       await _upsertLoginLookup(userModel);
 

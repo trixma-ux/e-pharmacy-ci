@@ -37,6 +37,15 @@ class AuthController extends AsyncNotifier<UserModel?> {
     });
   }
 
+  /// Relit le document `users/{uid}` de l'utilisateur connecté (ex. pour
+  /// savoir si un pharmacien en attente vient d'être validé).
+  Future<UserModel?> reloadCurrentUser() async {
+    final repo = ref.read(authRepositoryProvider);
+    final user = await repo.getCurrentUserData();
+    state = AsyncValue.data(user);
+    return user;
+  }
+
   Future<void> resetPassword(String email) async {
     final previous = state.value;
     try {
