@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/routing/role_redirect.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../controllers/auth_controller.dart';
 
@@ -32,11 +33,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     final user = authAsync.valueOrNull;
 
     if (user != null) {
-      if (user.role == 'pharmacist') {
-        context.go('/pharmacist_dashboard');
-      } else {
-        context.go('/main');
-      }
+      context.go(homePathFor(user));
       return;
     }
 
@@ -46,7 +43,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       if (!mounted) return;
       final loadedUser = ref.read(authControllerProvider).valueOrNull;
       if (loadedUser != null) {
-        context.go(loadedUser.role == 'pharmacist' ? '/pharmacist_dashboard' : '/main');
+        context.go(homePathFor(loadedUser));
         return;
       }
     }

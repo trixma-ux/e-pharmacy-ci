@@ -14,6 +14,8 @@ import '../../features/patient/presentation/screens/my_orders_screen.dart';
 import '../../features/patient/presentation/screens/pharmacy_map_screen.dart';
 import '../../features/chat/presentation/screens/chat_screen.dart';
 import '../../features/pharmacist/presentation/screens/pharmacist_dashboard_screen.dart';
+import '../../features/auth/presentation/screens/pending_validation_screen.dart';
+import 'role_redirect.dart';
 
 class _AuthRefreshListenable extends ChangeNotifier {
   _AuthRefreshListenable(Ref ref) {
@@ -30,29 +32,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/splash',
     refreshListenable: refreshListenable,
     redirect: (context, state) {
-      final authAsync = ref.read(authControllerProvider);
-      final user = authAsync.valueOrNull;
-      final path = state.matchedLocation;
-
-      const publicPaths = {'/splash', '/onboarding', '/auth'};
-
-      if (path == '/splash') return null;
-
-      if (user == null && !publicPaths.contains(path)) {
-        return '/auth';
-      }
-
-      if (user != null && user.role == 'pharmacist' && path != '/pharmacist_dashboard') {
-        if (!publicPaths.contains(path)) {
-          return '/pharmacist_dashboard';
-        }
-      }
-
-      if (user != null && user.role != 'pharmacist' && path == '/pharmacist_dashboard') {
-        return '/main';
-      }
-
-      return null;
+      final user = ref.read(authControllerProvider).valueOrNull;
+      // Pharmacien non validé => /pending_validation ; validé / admin =>
+      // tableau de bord ; patient => /main (voir role_redirect.dart).
+      return redirectFor(user, state.matchedLocation);
     },
     routes: [
       GoRoute(
@@ -99,6 +82,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/pharmacist_dashboard',
         name: 'pharmacist_dashboard',
         builder: (context, state) => const PharmacistDashboardScreen(),
+      ),
+      GoRoute(
+        path: AppPaths.pendingValidation,
+        name: 'pending_validation',
+        builder: (context, state) => const PendingValidationScreen(),
       ),
       GoRoute(
         path: '/map',
