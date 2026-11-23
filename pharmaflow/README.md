@@ -32,3 +32,19 @@ Comportement :
 - Seul un pharmacien `approved` ou un admin peut valider un pharmacien `pending` : la mise à jour ne doit toucher que `status: 'approved'`, `validatedBy: <son uid>` et `validatedAt: FieldValue.serverTimestamp()`.
 - Liste des pharmaciens à valider (réservée au pharmacien validé et à l'admin) : `users` `where role == 'pharmacist'` `where status == 'pending'`.
 - Personne ne peut changer son propre `role` ou `status`.
+
+## Règles Firestore : messages et commandes
+
+Messages (`messages/{id}`, un document par message entre deux utilisateurs) :
+
+- Forme : `{ senderId, receiverId, participants: [senderId, receiverId], text, timestamp, read: false }`, plus `id` et `orderId` facultatifs. Aucun autre champ n'est accepté.
+- Création : `senderId` doit être l'utilisateur connecté, `participants` doit contenir exactement l'expéditeur et le destinataire (deux uid distincts), `text` non vide (2000 caractères max.), `read` à `false`.
+- Lecture : seulement les deux participants. Les requêtes doivent être filtrées sur l'uid, par exemple `where('participants', arrayContains: uid).orderBy('timestamp', descending: true)` (index composite nécessaire), ou `where('senderId'|'receiverId', isEqualTo: uid)`.
+- Mise à jour : seulement le destinataire, pour passer `read` à `true` (et `readAt: FieldValue.serverTimestamp()` facultatif).
+- Suppression : interdite. Les pharmaciens validés et l'admin n'ont pas d'accès global.
+
+Commandes (`orders/{id}`), statuts : `pending`, `validated`, `rejected`, `delivering`, `delivered`, `cancelled` :
+
+- Création par le patient : `patientId` = son uid et `status: 'pending'`.
+- Le patient ne peut modifier sa commande que pour l'annuler : `status` `'pending'` -> `'cancelled'`, avec seulement `updatedAt` / `cancelledAt` en plus (horodatage serveur). Toute autre modification par le patient est refusée.
+- Pharmacien validé ou admin : lecture, mise à jour et suppression de toutes les commandes.
