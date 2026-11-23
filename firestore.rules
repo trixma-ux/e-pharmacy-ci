@@ -2,7 +2,7 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
     // Vérifie si l'utilisateur est connecté
     function isAuthenticated() {
       return request.auth != null;
@@ -13,23 +13,77 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Vérifie si l'utilisateur connecté est un pharmacien (rôle stocké dans son profil utilisateur)
-    function isPharmacist() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'pharmacist';
+    // Profil de l'utilisateur connecté
+    function me() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Pharmacien VALIDÉ : rôle 'pharmacist' ET status 'approved'.
+    // Un pharmacien inscrit lui-même démarre en status 'pending' et n'a AUCUN droit
+    // pharmacien tant qu'il n'a pas été validé.
+    function isApprovedPharmacist() {
+      return isAuthenticated()
+        && me().get('role', '') == 'pharmacist'
+        && me().get('status', '') == 'approved';
+    }
+
+    // Administrateur : rôle 'admin', attribué uniquement à la main (console / Admin SDK),
+    // jamais via l'inscription.
+    function isAdmin() {
+      return isAuthenticated() && me().get('role', '') == 'admin';
+    }
+
+    // Personnel habilité : pharmacien validé ou admin
+    function isStaff() {
+      return isApprovedPharmacist() || isAdmin();
+    }
+
+    // Champs de validation : jamais modifiables par l'utilisateur lui-même
+    function privilegedKeys() {
+      return ['role', 'status', 'validatedBy', 'validatedAt'];
     }
 
     // 1. Collection Utilisateurs (users)
-    // Plus de lecture publique : propriétaire ou pharmacien uniquement.
+    // Champs : role ('patient' | 'pharmacist' | 'admin'),
+    //          status ('pending' | 'approved', pharmaciens uniquement),
+    //          validatedBy (uid du valideur), validatedAt (horodatage serveur).
     match /users/{userId} {
-      allow get: if isOwner(userId) || isPharmacist();
-      allow list: if isPharmacist();
-      // Inscription : uniquement son propre document, rôle parmi ceux proposés à l'inscription
+      // Propriétaire (y compris pharmacien en attente) ou personnel habilité
+      allow get: if isOwner(userId) || isStaff();
+      // Listing (ex. pharmaciens en attente) : personnel habilité uniquement
+      allow list: if isStaff();
+
+      // Inscription : uniquement son propre document.
+      //  - patient : sans status (absent ou null)
+      //  - pharmacien : status forcé à 'pending'
+      //  - jamais 'admin', jamais validatedBy / validatedAt
       allow create: if isOwner(userId)
-        && request.resource.data.role in ['patient', 'pharmacist'];
-      // Mise à jour par le propriétaire, sans changer son rôle
+        && !request.resource.data.keys().hasAny(['validatedBy', 'validatedAt'])
+        && (
+          (request.resource.data.role == 'patient'
+            && request.resource.data.get('status', null) == null)
+          || (request.resource.data.role == 'pharmacist'
+            && request.resource.data.get('status', null) == 'pending')
+        );
+
+      // Mise à jour par le propriétaire : champs non privilégiés uniquement
+      // (jamais role, status, validatedBy, validatedAt)
       allow update: if isOwner(userId)
-        && request.resource.data.role == resource.data.role;
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(privilegedKeys());
+
+      // Validation d'un pharmacien en attente par un pharmacien validé ou un admin :
+      // status 'pending' (ou absent, comptes historiques) -> 'approved',
+      // avec validatedBy = uid du valideur et validatedAt = horodatage serveur, rien d'autre.
+      allow update: if isStaff()
+        && request.auth.uid != userId
+        && resource.data.get('role', '') == 'pharmacist'
+        && resource.data.get('status', 'pending') == 'pending'
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'validatedBy', 'validatedAt'])
+        && request.resource.data.status == 'approved'
+        && request.resource.data.validatedBy == request.auth.uid
+        && request.resource.data.validatedAt == request.time;
+
       allow delete: if false;
     }
 
@@ -54,8 +108,8 @@ service cloud.firestore {
     match /products/{productId} {
       // Tout le monde peut consulter le catalogue des médicaments
       allow read: if true;
-      // Seuls les pharmaciens peuvent modifier les produits
-      allow write: if isPharmacist();
+      // Seuls les pharmaciens validés (ou un admin) peuvent modifier les produits
+      allow write: if isStaff();
     }
 
     // 3. Collection de Discussion (messages)
@@ -65,11 +119,12 @@ service cloud.firestore {
 
     // 4. Collection des Commandes (orders)
     match /orders/{orderId} {
-      // Un patient peut créer et voir ses propres commandes. Le pharmacien peut toutes les gérer.
+      // Un patient crée et voit ses propres commandes.
+      // Seul un pharmacien validé (ou un admin) peut toutes les voir et les gérer.
       allow create: if isAuthenticated() && request.resource.data.patientId == request.auth.uid;
-      allow read: if isAuthenticated() && (resource.data.patientId == request.auth.uid || isPharmacist());
-      allow update: if isAuthenticated() && (resource.data.patientId == request.auth.uid || isPharmacist());
-      allow delete: if isPharmacist();
+      allow read: if isAuthenticated() && (resource.data.patientId == request.auth.uid || isStaff());
+      allow update: if isAuthenticated() && (resource.data.patientId == request.auth.uid || isStaff());
+      allow delete: if isStaff();
     }
   }
 }
