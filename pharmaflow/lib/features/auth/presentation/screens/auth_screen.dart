@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:glassmorphism/glassmorphism.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/auth_error_messages.dart';
+import '../../../../core/routing/role_redirect.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/validation/form_validators.dart';
 import '../../../../shared/widgets/custom_text_field.dart';
@@ -130,12 +131,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           ),
         );
       } else if (next is AsyncData && next.value != null) {
-        // Redirection en fonction du rôle
-        if (next.value!.role == 'pharmacist') {
-          context.go('/pharmacist_dashboard');
-        } else {
-          context.go('/main');
-        }
+        // Redirection selon le rôle et le statut (pharmacien en attente
+        // => écran d'attente de validation)
+        context.go(homePathFor(next.value!));
       }
     });
 
