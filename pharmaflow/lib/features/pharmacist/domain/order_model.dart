@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum OrderStatus { pending, validated, rejected, delivering, delivered }
+enum OrderStatus { pending, validated, rejected, delivering, delivered, cancelled }
 
 class OrderItem {
   final String name;
@@ -48,6 +48,7 @@ class OrderModel {
   final String? ordonnanceUrl;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final DateTime? cancelledAt;
 
   const OrderModel({
     required this.id,
@@ -61,28 +62,25 @@ class OrderModel {
     required this.createdAt,
     this.ordonnanceUrl,
     this.updatedAt,
+    this.cancelledAt,
   });
 
   int get grandTotal => totalValue + deliveryFee;
 
   bool get hasPrescriptionItems => items.any((i) => i.requiresPrescription);
 
-  String get statusLabel {
-    switch (status) {
-      case OrderStatus.pending: return 'En attente';
-      case OrderStatus.validated: return 'Validée';
-      case OrderStatus.rejected: return 'Rejetée';
-      case OrderStatus.delivering: return 'En livraison';
-      case OrderStatus.delivered: return 'Livrée';
-    }
-  }
+  /// A patient may cancel only while the order is still pending.
+  bool get canBeCancelled => status == OrderStatus.pending;
 
-  static OrderStatus _parseStatus(String? s) {
+  String get statusLabel => status.label;
+
+  static OrderStatus parseStatus(String? s) {
     switch (s) {
       case 'validated': return OrderStatus.validated;
       case 'rejected': return OrderStatus.rejected;
       case 'delivering': return OrderStatus.delivering;
       case 'delivered': return OrderStatus.delivered;
+      case 'cancelled': return OrderStatus.cancelled;
       default: return OrderStatus.pending;
     }
   }
@@ -98,7 +96,7 @@ class OrderModel {
       totalValue: data['totalValue'] ?? 0,
       deliveryFee: data['deliveryFee'] ?? 1000,
       paymentMethod: data['paymentMethod'] ?? 'Wave',
-      status: _parseStatus(data['status']),
+      status: parseStatus(data['status']),
       ordonnanceUrl: data['ordonnanceUrl'],
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
@@ -106,21 +104,30 @@ class OrderModel {
       updatedAt: data['updatedAt'] != null
           ? (data['updatedAt'] as Timestamp).toDate()
           : null,
+      cancelledAt: data['cancelledAt'] != null
+          ? (data['cancelledAt'] as Timestamp).toDate()
+          : null,
     );
   }
 
-  Map<String, dynamic> toMap() => {
-    'patientId': patientId,
-    'patientName': patientName,
-    'items': items.map((i) => i.toMap()).toList(),
-    'totalValue': totalValue,
-    'deliveryFee': deliveryFee,
-    'paymentMethod': paymentMethod,
-    'status': status.name,
-    'ordonnanceUrl': ordonnanceUrl,
-    'createdAt': Timestamp.fromDate(createdAt),
-    'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
-  };
+  Map<String, dynamic> toMap() {
+    final map = <String, dynamic>{
+      'patientId': patientId,
+      'patientName': patientName,
+      'items': items.map((i) => i.toMap()).toList(),
+      'totalValue': totalValue,
+      'deliveryFee': deliveryFee,
+      'paymentMethod': paymentMethod,
+      'status': status.name,
+      'ordonnanceUrl': ordonnanceUrl,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
+    };
+    if (cancelledAt != null) {
+      map['cancelledAt'] = Timestamp.fromDate(cancelledAt!);
+    }
+    return map;
+  }
 
   String formatPrice(int value) {
     final str = value.toString();
@@ -133,5 +140,75 @@ class OrderModel {
     }
     groups.insert(0, remaining);
     return '${groups.join(' ')} FCFA';
+  }
+}
+
+/// Exact Firestore update a patient must send to cancel a pending order.
+/// Keys and values are constrained by firestore.rules (cbcc8d1):
+/// pending -> cancelled, only status / updatedAt / cancelledAt, timestamps = request.time.
+Map<String, dynamic> patientCancelUpdate() => {
+  'status': 'cancelled',
+  'updatedAt': FieldValue.serverTimestamp(),
+  'cancelledAt': FieldValue.serverTimestamp(),
+};
+
+/// Dashboard counters. Revenue is the sum of [OrderModel.grandTotal] for
+/// delivered orders only — cancelled, rejected and in-flight orders are excluded.
+Map<String, int> computeOrderStats(Iterable<OrderModel> orders) {
+  var pending = 0;
+  var validated = 0;
+  var delivering = 0;
+  var delivered = 0;
+  var rejected = 0;
+  var cancelled = 0;
+  var revenue = 0;
+  var count = 0;
+  for (final o in orders) {
+    count++;
+    switch (o.status) {
+      case OrderStatus.pending:
+        pending++;
+        break;
+      case OrderStatus.validated:
+        validated++;
+        break;
+      case OrderStatus.delivering:
+        delivering++;
+        break;
+      case OrderStatus.delivered:
+        delivered++;
+        revenue += o.grandTotal;
+        break;
+      case OrderStatus.rejected:
+        rejected++;
+        break;
+      case OrderStatus.cancelled:
+        cancelled++;
+        break;
+    }
+  }
+  return {
+    'total': count,
+    'pending': pending,
+    'validated': validated,
+    'delivering': delivering,
+    'delivered': delivered,
+    'rejected': rejected,
+    'cancelled': cancelled,
+    'revenue': revenue,
+  };
+}
+
+
+extension OrderStatusLabel on OrderStatus {
+  String get label {
+    switch (this) {
+      case OrderStatus.pending: return 'En attente';
+      case OrderStatus.validated: return 'Validée';
+      case OrderStatus.rejected: return 'Rejetée';
+      case OrderStatus.delivering: return 'En livraison';
+      case OrderStatus.delivered: return 'Livrée';
+      case OrderStatus.cancelled: return 'Annulée';
+    }
   }
 }

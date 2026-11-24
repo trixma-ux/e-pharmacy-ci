@@ -54,17 +54,14 @@ class OrderRepository {
     return _firestore
         .collection('orders')
         .snapshots()
-        .map((snap) {
-      final all = snap.docs;
-      return {
-        'total': all.length,
-        'pending': all.where((d) => d.data()['status'] == 'pending').length,
-        'validated': all.where((d) => d.data()['status'] == 'validated').length,
-        'delivering': all.where((d) => d.data()['status'] == 'delivering').length,
-        'delivered': all.where((d) => d.data()['status'] == 'delivered').length,
-        'rejected': all.where((d) => d.data()['status'] == 'rejected').length,
-      };
-    });
+        .map((snap) => computeOrderStats(
+              snap.docs.map((doc) => OrderModel.fromFirestore(doc)),
+            ));
+  }
+
+  /// Annulation par le patient : écriture exacte attendue par les règles Firestore.
+  Future<void> cancelPatientOrder(String orderId) async {
+    await _firestore.collection('orders').doc(orderId).update(patientCancelUpdate());
   }
 }
 

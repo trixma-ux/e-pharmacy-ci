@@ -57,6 +57,9 @@ class _PharmacistDashboardScreenState extends ConsumerState<PharmacistDashboardS
       case OrderStatus.delivered:
         bg = const Color(0xFFF3E5F5); fg = const Color(0xFF6A1B9A); icon = Icons.done_all_rounded;
         break;
+      case OrderStatus.cancelled:
+        bg = const Color(0xFFECEFF1); fg = const Color(0xFF546E7A); icon = Icons.do_not_disturb_on_rounded;
+        break;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -66,10 +69,7 @@ class _PharmacistDashboardScreenState extends ConsumerState<PharmacistDashboardS
         children: [
           Icon(icon, size: 13, color: fg),
           const SizedBox(width: 4),
-          Text(status.name == 'pending' ? 'En attente' :
-               status.name == 'validated' ? 'Validée' :
-               status.name == 'rejected' ? 'Rejetée' :
-               status.name == 'delivering' ? 'En livraison' : 'Livrée',
+          Text(status.label,
               style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.bold)),
         ],
       ),
@@ -285,7 +285,14 @@ class _PharmacistDashboardScreenState extends ConsumerState<PharmacistDashboardS
         children: [
           // Stats Grid
           statsAsync.when(
-            data: (stats) => _buildStatsGrid(stats),
+            data: (stats) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildStatsGrid(stats),
+                const SizedBox(height: 12),
+                _buildRevenueBanner(stats),
+              ],
+            ),
             loading: () => const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator())),
             error: (e, _) => Text('Erreur: $e'),
           ),
@@ -312,6 +319,55 @@ class _PharmacistDashboardScreenState extends ConsumerState<PharmacistDashboardS
     );
   }
 
+  Widget _buildRevenueBanner(Map<String, int> stats) {
+    final revenue = stats['revenue'] ?? 0;
+    final str = revenue.toString();
+    String formatted;
+    if (str.length <= 3) {
+      formatted = '$str FCFA';
+    } else {
+      final groups = <String>[];
+      var remaining = str;
+      while (remaining.length > 3) {
+        groups.insert(0, remaining.substring(remaining.length - 3));
+        remaining = remaining.substring(0, remaining.length - 3);
+      }
+      groups.insert(0, remaining);
+      formatted = '${groups.join(' ')} FCFA';
+    }
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: const Color(0xFF2E7D32).withValues(alpha: 0.12), shape: BoxShape.circle),
+            child: const Icon(Icons.payments_rounded, color: Color(0xFF2E7D32), size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Chiffre d\'affaires (livrées)', style: TextStyle(fontSize: 12, color: AppColors.textSecondaryLight)),
+                const SizedBox(height: 2),
+                Text(formatted, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2E7D32))),
+                const Text('Les commandes annulées et rejetées sont exclues',
+                    style: TextStyle(fontSize: 10, color: AppColors.textSecondaryLight)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStatsGrid(Map<String, int> stats) {
     final statItems = [
       {'label': 'Total commandes', 'value': stats['total'] ?? 0, 'icon': Icons.shopping_bag_rounded, 'color': AppColors.primary},
@@ -320,6 +376,7 @@ class _PharmacistDashboardScreenState extends ConsumerState<PharmacistDashboardS
       {'label': 'En livraison', 'value': stats['delivering'] ?? 0, 'icon': Icons.local_shipping_rounded, 'color': const Color(0xFF1565C0)},
       {'label': 'Livrées', 'value': stats['delivered'] ?? 0, 'icon': Icons.done_all_rounded, 'color': const Color(0xFF6A1B9A)},
       {'label': 'Rejetées', 'value': stats['rejected'] ?? 0, 'icon': Icons.cancel_rounded, 'color': AppColors.error},
+      {'label': 'Annulées', 'value': stats['cancelled'] ?? 0, 'icon': Icons.do_not_disturb_on_rounded, 'color': const Color(0xFF546E7A)},
     ];
 
     return GridView.count(
@@ -781,14 +838,12 @@ class _OrderDetailSheet extends ConsumerWidget {
       case OrderStatus.rejected: bg = const Color(0xFFFFEBEE); fg = const Color(0xFFC62828); break;
       case OrderStatus.delivering: bg = const Color(0xFFE3F2FD); fg = const Color(0xFF1565C0); break;
       case OrderStatus.delivered: bg = const Color(0xFFF3E5F5); fg = const Color(0xFF6A1B9A); break;
+      case OrderStatus.cancelled: bg = const Color(0xFFECEFF1); fg = const Color(0xFF546E7A); break;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
-      child: Text(status.name == 'pending' ? 'En attente' :
-                  status.name == 'validated' ? 'Validée' :
-                  status.name == 'rejected' ? 'Rejetée' :
-                  status.name == 'delivering' ? 'En livraison' : 'Livrée',
+      child: Text(status.label,
           style: TextStyle(color: fg, fontWeight: FontWeight.bold, fontSize: 13)),
     );
   }
