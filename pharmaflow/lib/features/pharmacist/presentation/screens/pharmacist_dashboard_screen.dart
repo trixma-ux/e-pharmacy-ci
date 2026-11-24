@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../data/order_repository.dart';
 import '../../domain/order_model.dart';
+import '../widgets/pharmacist_validation_tab.dart';
 
 class PharmacistDashboardScreen extends ConsumerStatefulWidget {
   const PharmacistDashboardScreen({super.key});
@@ -21,7 +22,7 @@ class _PharmacistDashboardScreenState extends ConsumerState<PharmacistDashboardS
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -228,11 +229,13 @@ class _PharmacistDashboardScreenState extends ConsumerState<PharmacistDashboardS
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white.withValues(alpha: 0.5),
               labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+              labelPadding: const EdgeInsets.symmetric(horizontal: 2),
               tabs: const [
                 Tab(text: 'Aperçu'),
                 Tab(text: 'Toutes'),
                 Tab(text: 'En attente'),
                 Tab(text: 'Historique'),
+                Tab(text: 'Validations'),
               ],
             ),
           ),
@@ -252,6 +255,9 @@ class _PharmacistDashboardScreenState extends ConsumerState<PharmacistDashboardS
 
             // ── TAB 4: Historique ────────────────────────────────────────
             _buildOrdersTab(allOrdersAsync, 'delivered'),
+
+            // ── TAB 5: Validation des pharmaciens en attente ─────────────
+            const PharmacistValidationTab(),
           ],
         ),
       ),
